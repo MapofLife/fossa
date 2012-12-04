@@ -13,6 +13,8 @@
 
 (def ^:const PARTITION-SIZE 10000)
 
+(def ^:const MAX-OBS 40000)
+
 ;; Ordered column names from the occurrence_20120802.txt.gz dump.
 (def occ-fields ["?occurrenceid" "?taxonid" "?dataresourceid" "?kingdom"
                  "?phylum" "?class" "?orderrank" "?family" "?genus"
@@ -96,10 +98,12 @@
    are aggregated and ordered according to the order of the incoming
    latitude and longitude."
   [tuples]
-  (let [partition-idxs (range (ceil (/ (count tuples) partition-size)))]
-    (apply concat (map collect-update-stmts
-                       (partition-all partition-size partition-size tuples)
-                       partition-idxs))))
+  (if (>= MAX-OBS (count tuples))
+    [[nil nil]]
+    (let [partition-idxs (range (ceil (/ (count tuples) partition-size)))]
+      (apply concat (map collect-update-stmts
+                         (partition-all partition-size partition-size tuples)
+                         partition-idxs)))))
 
 (defn parse-occurrence-data
   "Shred some GBIF."

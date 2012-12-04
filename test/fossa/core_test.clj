@@ -62,3 +62,13 @@
        [1 "UPDATE gbif_points SET precisions = '{\"\", \"\"}' WHERE name = 'Acidobacteria' AND partition = 1;"]
        [1 "UPDATE gbif_points SET season = '{\"2\", \"2\"}' WHERE name = 'Acidobacteria' AND partition = 1;"]
        [1 "UPDATE gbif_points SET years = '{\"2007\", \"2008\"}' WHERE name = 'Acidobacteria' AND partition = 1;"]]))
+
+(fact
+  "Test parse-occurrence-data with large number of observations"
+  (let [src (into [["Passer domesticus" "999999999" "-40.8747" "170.851" "" "2007" "6"]]
+                  (repeat MAX-OBS ["Really big ants" "222222222" "-40.8747283" "170.851" "10" "2007" ""]))
+        partitioned-src (parse-occurrence-data src)]
+    (<- [?name]
+        (partitioned-src ?name ?partition ?stmt)
+        (= ?name "Really big ants")))
+  => (produces []))

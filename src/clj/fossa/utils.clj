@@ -228,12 +228,12 @@
     (get season-idxs month)))
 
 (defn get-season
-  "Based on the latitude and the month, return a \"hemisphere season\"
-   string.
+  "Based on the latitude and the month, return a season index
+   as given in season-map.
 
    Usage:
      (get-season 40.0 1)
-     ;=> \"N winter\""
+     ;=> \"0\""
   [lat month]
   (if (= "" month)
     ""

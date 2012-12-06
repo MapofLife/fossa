@@ -46,7 +46,7 @@
   ([path]
      (let [digits 7 ;; round all floats to max seven digits
            src (hfs-textline path)]
-       (<- [?scientificname ?occurrenceid ?lat ?lon ?clean-prec ?clean-year ?clean-month]
+       (<- [?scientificname ?occurrenceid ?lat ?lon ?clean-prec ?clean-year ?clean-month ?season]
            (src ?line)
            (u/split-line ?line :>> occ-fields)
            (not-ebird ?dataresourceid) ;; Filter out eBird (See http://goo.gl/4OMLl)
@@ -55,19 +55,20 @@
            (cleanup-data
             digits ?latitude ?longitude ?coordinateprecision ?year ?month :>
             ?lat ?lon ?clean-prec ?clean-year ?clean-month)
+           (u/get-season ?lat ?clean-month :> ?season)
            (:distinct true)))))
 
 (def cleaned-fields
   "List of fields in `cleaned-src`. Adding a new field to the vector
    will result in the creation of an UPDATE statement for that field
    in the `parse-occurrence-data` query."
-  ["?name" "?occids" "?lats" "?lons" "?precisions" "?years" "?months"])
+  ["?name" "?occids" "?lats" "?lons" "?precisions" "?years" "?months" "?season"])
 
 (def collect-fields
   "Fields that will be aggregated by latlon. New fields derived from
   `cleaned-fields` and generated within `parse-occurrence-data` should
   be added to the `conj` form for processing into UPDATE statements."
-  (sort (conj cleaned-fields "?season")))
+  (sort cleaned-fields))
 
 (def field-map
   "Sorted map of field names as keys and assigned field indices as
@@ -98,7 +99,7 @@
    are aggregated and ordered according to the order of the incoming
    latitude and longitude."
   [tuples]
-  (if (>= MAX-OBS (count tuples))
+  (if (<= MAX-OBS (count tuples))
     [[nil nil]]
     (let [partition-idxs (range (ceil (/ (count tuples) partition-size)))]
       (apply concat (map collect-update-stmts
@@ -110,7 +111,6 @@
   [cleaned-src & {:keys [partition-size] :or {partition-size PARTITION-SIZE}}]
   (<- [?name ?partition ?update-stmt]
       (cleaned-src :>> cleaned-fields)
-      (u/get-season ?lats ?months :> ?season)
       (collect-by-latlon [partition-size] :<< collect-fields :>
                          ?partition ?update-stmt)))
 

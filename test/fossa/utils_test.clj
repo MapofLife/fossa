@@ -160,29 +160,22 @@
 
 (fact
   "Test mk-update-stmt"
-  (mk-update-stmt "Acidobacteria" "years" "'{\"2008,2009\", \"2009\"}'")
-  => "UPDATE gbif_points SET years = '{\"2008,2009\", \"2009\"}' WHERE name = 'Acidobacteria';")
+  (mk-update-stmt "Acidobacteria" "years" "'{\"2008,2009\", \"2009\"}'" 1)
+  => "UPDATE gbif_points SET years = '{\"2008,2009\", \"2009\"}' WHERE name = 'Acidobacteria' AND partition = 1;")
 
 (fact
   "Test data->update-stmt"
   (let [sci-name "Passer"
         field-name "occids"
         field-num 2
+        partition-num 1
         tuples [["-1.7" "29.3" "99999999" "" "2007" "8" "1"]
                 ["-1.7" "29.3" "11111111" "" "2007" "8" "1"]
                 ["-1" "30" "22222222" "" "2012" "3" "4"]]
         lats (extract 0 tuples)
         lons (extract 1 tuples)]
-    (data->update-stmt tuples lats lons sci-name field-name field-num))
-  => "UPDATE gbif_points SET occids = '{\"22222222\", \"99999999,11111111\"}' WHERE name = 'Passer';")
-
-(fact
-  "Test data->update-stmt"
-  (let [tuples [["1.2" "4.5" "Ursus" "2007" "2008"]
-                ["2.3" "5.6" "Ursus" "2009" "2010"]]]
-    (data->update-stmt tuples ["1.2" "4.5"] ["3.4" "5.6"]
-                       "Ursus" "years" 3))
-  => "UPDATE gbif_points SET years = '{\"2007\", \"2009\"}' WHERE name = 'Ursus';")
+    (data->update-stmt tuples lats lons sci-name partition-num field-name field-num))
+  => "UPDATE gbif_points SET occids = '{\"22222222\", \"99999999,11111111\"}' WHERE name = 'Passer' AND partition = 1;")
 
 (fact
   "Test wkt-str->hex"
@@ -195,8 +188,9 @@
 
 (fact
   "Test mk-multipoint-update"
-  (mk-multipoint-update "Passer" [1 2 3 3] [4 5 6 6])
-  => "UPDATE gbif_points SET the_geom_multipoint = ST_GeomFromWKB(ST_AsBinary('000000000400000003000000000140100000000000003FF0000000000000000000000140140000000000004000000000000000000000000140180000000000004008000000000000'::geometry), 4326) WHERE name = 'Passer';")
+  (let [partition-num 1]
+    (mk-multipoint-update "Passer" partition-num [1 2 3 3] [4 5 6 6]))
+  => "UPDATE gbif_points SET the_geom_multipoint = ST_GeomFromWKB(ST_AsBinary('000000000400000003000000000140100000000000003FF0000000000000000000000140140000000000004000000000000000000000000140180000000000004008000000000000'::geometry), 4326) WHERE name = 'Passer' AND partition = 1;")
 
 (fact
   "Test get-parse-fields"

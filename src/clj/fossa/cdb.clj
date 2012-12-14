@@ -62,13 +62,14 @@
          (cdb-execute ?sql :> ?response))))
 
 (defn update-table
-  [path]
-  "Bulkload file at supplied path to CartoDB. The file contains tab delineated
-   textlines where the first column is a Scientific name and the second column
-   is an SQL UPDATE statement."
-  (let [src (hfs-textline path)]
-    (?<- (hfs-textline "/tmp/sink" :sinkmode :replace)
-         [?name ?partition ?response]
-         (src ?line)
-         (u/split-line ?line :> ?name ?partition ?sql)
-         (cdb-execute ?sql :> ?response))))
+  [src]
+  "Bulkload src tap at  to CartoDB. The file contains tab delineated textlines
+   where the first column is a Scientific name and the second column is an SQL
+   UPDATE statement."  
+  (?<- (hfs-textline "/tmp/sink" :sinkmode :replace)
+       [?name ?partition ?response]
+       (src ?line)
+       (u/split-line ?line :> ?name ?partition ?sql)
+       (s/replace ?sql "the_geom_multipoint" "the_geom" :> ?sql-ready)
+       (cdb-execute ?sql-ready :> ?response)))
+

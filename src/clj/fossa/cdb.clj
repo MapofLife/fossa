@@ -58,6 +58,8 @@
          [?name ?count ?sql ?response]
          (src ?line)
          (u/split-line ?line :> ?name ?count)
+         (read-string ?count :> ?count-int)
+         (<= ?count-int 40000)
          (get-insert-sql ?name ?count psize :> ?sql)
          (cdb-execute ?sql :> ?response))))
 
